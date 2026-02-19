@@ -1,9 +1,16 @@
-from datetime import datetime, timedelta
+import math
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
+
+
+def safe_float(value: object, default: float = 0.0) -> float:
+    v = float(value)
+    if math.isnan(v) or math.isinf(v):
+        return default
+    return v
 
 
 class StockService:
@@ -116,12 +123,12 @@ class StockService:
             sma_50 = float(np.mean(closes[-50:])) if len(closes) >= 50 else float(np.mean(closes))
             sma_200 = float(np.mean(closes[-200:])) if len(closes) >= 200 else float(np.mean(closes))
 
-            momentum_1m = (closes[-1] / closes[-21] - 1) * 100 if len(closes) >= 21 else 0
-            momentum_3m = (closes[-1] / closes[-63] - 1) * 100 if len(closes) >= 63 else 0
-            momentum_6m = (closes[-1] / closes[-126] - 1) * 100 if len(closes) >= 126 else 0
+            momentum_1m = safe_float((closes[-1] / closes[-21] - 1) * 100) if len(closes) >= 21 else 0.0
+            momentum_3m = safe_float((closes[-1] / closes[-63] - 1) * 100) if len(closes) >= 63 else 0.0
+            momentum_6m = safe_float((closes[-1] / closes[-126] - 1) * 100) if len(closes) >= 126 else 0.0
 
             returns = np.diff(closes) / closes[:-1]
-            volatility = float(np.std(returns) * np.sqrt(252) * 100)
+            volatility = safe_float(float(np.std(returns) * np.sqrt(252) * 100))
 
             signals = []
             score = 0
@@ -185,17 +192,17 @@ class StockService:
 
             return {
                 "symbol": symbol,
-                "currentPrice": round(current_price, 2),
-                "predictedPrice": round(predicted_price, 2),
-                "predictedGrowth": round(predicted_growth, 2),
+                "currentPrice": round(safe_float(current_price), 2),
+                "predictedPrice": round(safe_float(predicted_price), 2),
+                "predictedGrowth": round(safe_float(predicted_growth), 2),
                 "confidence": confidence,
                 "signals": signals,
-                "momentum1m": round(float(momentum_1m), 2),
-                "momentum3m": round(float(momentum_3m), 2),
-                "momentum6m": round(float(momentum_6m), 2),
-                "volatility": round(volatility, 2),
-                "sma20": round(sma_20, 2),
-                "sma50": round(sma_50, 2),
+                "momentum1m": round(safe_float(momentum_1m), 2),
+                "momentum3m": round(safe_float(momentum_3m), 2),
+                "momentum6m": round(safe_float(momentum_6m), 2),
+                "volatility": round(safe_float(volatility), 2),
+                "sma20": round(safe_float(sma_20), 2),
+                "sma50": round(safe_float(sma_50), 2),
             }
         except Exception:
             return {
